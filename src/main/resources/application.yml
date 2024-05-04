@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: weather-data-scheduler
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  liquibase:
+    change-log: db//changelog/changelog-master.xml
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+
+logging:
+  level:
+    root: info
+
+scheduler:
+  weather:
+    interval-in-cron: "* 0/5 * * * *"
+  forecast:
+    interval-in-cron: "* 0/30 * * * *"
+  default-scheduler-lock: "PT40M"
+  lock-at-least-for: "PT1M"
+  lock-at-most-for: "PT1M"
+
+open-weather:
+  base-url: ${BASE_URL:https://api.openweathermap.org/data/2.5}
+  weather-path: ${URL_PATH:/weather}
+  forecast-path: ${FORECAST_PATH:/forecast}
+  city: ${CITY:Moscow}
+  lang: ${LANG:en}
+  units: ${UNITS:metric}
+  api-key: ${API_KEY:key}
+  popular-city-ids: 524894, 498817, 1496747, 1486209,519336, 551487, 1508291, 1496153, 499099, 501175, 479561, 1502026,
+    511196, 472045, 472757, 498677, 542420, 468902, 1488754, 2013348

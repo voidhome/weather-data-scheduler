@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <changeSet id="2024-05-30-insert-initial-city-popularity" author="bloodwork">
+        <insert tableName="city_popularity">
+            <column name="city" value="Moscow"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Saint Petersburg"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Novosibirsk"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Yekaterinburg"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Nizhny Novgorod"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Kazan"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Chelyabinsk"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Omsk"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Samara"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Rostov-on-Don"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Ufa"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Krasnoyarsk"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Perm"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Voronezh"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Volgograd"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Saratov"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Krasnodar"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Yaroslavl"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Tyumen"/>
+            <column name="popularity" value="100"/>
+        </insert>
+        <insert tableName="city_popularity">
+            <column name="city" value="Vladivostok"/>
+            <column name="popularity" value="100"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

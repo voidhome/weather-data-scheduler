@@ -12,6 +12,8 @@ spring:
     redis:
       host: 127.0.0.1
       port: 6379
+  cache:
+    type: redis
 
 logging:
   level:
@@ -21,6 +23,8 @@ scheduler:
   weather:
     interval-in-cron: "* 0/5 * * * *"
   forecast:
+    interval-in-cron: "* 0/10 * * * *"
+  city-popularity:
     interval-in-cron: "* 0/30 * * * *"
   default-scheduler-lock: "PT40M"
   lock-at-least-for: "PT1M"
@@ -34,5 +38,7 @@ open-weather:
   lang: ${LANG:en}
   units: ${UNITS:metric}
   api-key: ${API_KEY:key}
-  popular-city-ids: 524894, 498817, 1496747, 1486209,519336, 551487, 1508291, 1496153, 499099, 501175, 479561, 1502026,
-    511196, 472045, 472757, 498677, 542420, 468902, 1488754, 2013348
+
+weather:
+  forecast-before-limit-message: "Период прогноза должен начинаться с текущей даты и не может быть более 5 дней вперед."
+  forecast-after-limit-message: "Прогноз погоды может быть предоставлен максимум на 5 дней вперед от начальной даты."

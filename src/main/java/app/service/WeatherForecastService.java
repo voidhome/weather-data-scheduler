@@ -1,18 +1,21 @@
 package app.service;
 
 import app.dto.ForecastDto;
+import app.dto.response.WeatherForecastResponse;
 import app.table.WeatherForecast;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Optional;
 
 public interface WeatherForecastService {
 
-    List<WeatherForecast> getWeatherForecast(String city, LocalDateTime startDateTime, LocalDateTime endDateTime);
+    WeatherForecastResponse getWeatherForecast(String city, LocalDateTime startDateTime, LocalDateTime endDateTime);
 
-    Iterable<WeatherForecast> createWeatherForecast(ForecastDto forecastDto);
+    Optional<ForecastDto> getForecastDtoFromExternalApi(String city);
+
+    Iterable<WeatherForecast> createWeatherForecast(String city);
 
     void deleteAllWeatherForecast();
 
-    String analyzeWeatherForecast(List<WeatherForecast> weatherForecasts);
+    String analyzeWeatherForecast(WeatherForecastResponse response);
 }

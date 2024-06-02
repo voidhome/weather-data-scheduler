@@ -9,5 +9,5 @@ public interface OpenWeatherRestClient {
 
     Optional<WeatherDto> getWeatherDto(String city);
 
-    Optional<ForecastDto> getForecastDto(Integer cityId);
+    Optional<ForecastDto> getForecastDto(String city);
 }

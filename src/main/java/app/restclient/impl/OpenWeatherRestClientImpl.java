@@ -13,6 +13,8 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 @Slf4j
@@ -48,12 +50,12 @@ public class OpenWeatherRestClientImpl implements OpenWeatherRestClient {
     }
 
     @Override
-    public Optional<ForecastDto> getForecastDto(Integer cityId) {
+    public Optional<ForecastDto> getForecastDto(String city) {
         try {
             return Optional.ofNullable(restClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .path(forecastPath)
-                            .queryParam("id", cityId)
+                            .queryParam("q", URLEncoder.encode(city, StandardCharsets.UTF_8))
                             .build())
                     .retrieve()
                     .body(ForecastDto.class));

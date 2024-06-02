@@ -3,6 +3,7 @@ package app.mapper;
 import app.dto.CityDto;
 import app.dto.ForecastDetailsDto;
 import app.dto.ForecastDto;
+import app.dto.response.WeatherForecastResponse;
 import app.table.WeatherForecast;
 import app.table.WeatherType;
 import org.mapstruct.Mapper;
@@ -14,6 +15,7 @@ import org.mapstruct.factory.Mappers;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -68,5 +70,16 @@ public interface WeatherForecastMapper {
         else if (temperature < 20) return WeatherType.MILD;
         else return WeatherType.WARM;
     }
+
+    default WeatherForecastResponse toResponse(Iterable<WeatherForecast> weatherForecasts) {
+        List<WeatherForecast> forecasts = new ArrayList<>();
+        weatherForecasts.forEach(forecasts::add);
+
+        return WeatherForecastResponse.builder()
+                .forecasts(forecasts)
+                .build();
+    }
+
+    WeatherForecastResponse toResponse(String message);
 }
 

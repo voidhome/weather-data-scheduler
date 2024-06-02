@@ -1,19 +1,16 @@
 package app.scheduler.impl;
 
-import app.dto.ForecastDto;
-import app.restclient.OpenWeatherRestClient;
 import app.scheduler.WeatherForecastTask;
+import app.service.CityPopularityService;
 import app.service.WeatherForecastService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @Slf4j
@@ -21,10 +18,7 @@ import java.util.Optional;
 public class WeatherForecastTaskImpl implements WeatherForecastTask {
 
     private final WeatherForecastService forecastService;
-    private final OpenWeatherRestClient openWeatherRestClient;
-
-    @Value("${open-weather.popular-city-ids}")
-    private List<Integer> popularCityIds;
+    private final CityPopularityService cityPopularityService;
 
     @Override
     @Transactional
@@ -34,10 +28,13 @@ public class WeatherForecastTaskImpl implements WeatherForecastTask {
     public void syncWeatherForecastData() {
         try {
             forecastService.deleteAllWeatherForecast();
-            for (Integer cityId : popularCityIds) {
-                Optional<ForecastDto> forecastDto = openWeatherRestClient.getForecastDto(cityId);
-                forecastService.createWeatherForecast(forecastDto.get());
+
+            List<String> popularCity = cityPopularityService.getPopularCities();
+
+            for (String city : popularCity) {
+                forecastService.createWeatherForecast(city);
             }
+
             log.info("Синхронизация прогноза погоды выполнена успешно");
         } catch (Exception e) {
             log.error("Ошибка при синхронизации прогноза погоды: {}", e.getMessage());

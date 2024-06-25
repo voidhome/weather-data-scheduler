@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: weather-data-scheduler
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  liquibase:
+    change-log: db//changelog/changelog-master.xml
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+  cache:
+    type: redis
+
+logging:
+  level:
+    root: info
+
+scheduler:
+  weather:
+    interval-in-cron: "* 0/5 * * * *"
+  forecast:
+    interval-in-cron: "* 0/10 * * * *"
+  city-popularity:
+    interval-in-cron: "* 0/30 * * * *"
+  default-scheduler-lock: "PT40M"
+  lock-at-least-for: "PT1M"
+  lock-at-most-for: "PT1M"
+
+open-weather:
+  base-url: ${BASE_URL:https://api.openweathermap.org/data/2.5}
+  weather-path: ${URL_PATH:/weather}
+  forecast-path: ${FORECAST_PATH:/forecast}
+  city: ${CITY:Moscow}
+  lang: ${LANG:en}
+  units: ${UNITS:metric}
+  api-key: ${API_KEY:key}
+
+weather:
+  forecast-before-limit-message: "Период прогноза должен начинаться с текущей даты и не может быть более 5 дней вперед."
+  forecast-after-limit-message: "Прогноз погоды может быть предоставлен максимум на 5 дней вперед от начальной даты."

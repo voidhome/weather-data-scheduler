@@ -13,8 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -54,12 +52,12 @@ public class WeatherForecastServiceImpl implements WeatherForecastService {
 
         if (startDateTime.toLocalDate().isBefore(now) || startDateTime.toLocalDate().isAfter(now.plusDays(5))) {
             log.warn(forecastBeforeLimitMessage);
-            return WeatherForecastMapper.INSTANCE.toResponse(forecastBeforeLimitMessage);
+            return Mono.just(WeatherForecastMapper.INSTANCE.toResponse(forecastBeforeLimitMessage));
         }
 
         if (endDateTime.toLocalDate().isAfter(startDateTime.toLocalDate().plusDays(5))) {
             log.warn(forecastAfterLimitMessage);
-            return WeatherForecastMapper.INSTANCE.toResponse(forecastAfterLimitMessage);
+            return Mono.just(WeatherForecastMapper.INSTANCE.toResponse(forecastAfterLimitMessage));
         }
 
         cityPopularityService.increaseCityPopularity(city);
@@ -69,9 +67,9 @@ public class WeatherForecastServiceImpl implements WeatherForecastService {
                 .flatMap(weatherForecasts -> {
                     if (!weatherForecasts.isEmpty()) {
                         log.info("Данные о прогнозе погоды успешно получены из БД: {}", weatherForecasts);
-                        return WeatherForecastMapper.INSTANCE.toResponse(weatherForecasts);
+                        return Mono.just(WeatherForecastMapper.INSTANCE.toResponse(weatherForecasts));
                     } else {
-                        return WeatherForecastMapper.INSTANCE.toResponse(createWeatherForecast(city).toIterable());
+                        return Mono.just(WeatherForecastMapper.INSTANCE.toResponse(createWeatherForecast(city).toIterable()));
                     }
                 });
     }
@@ -97,11 +95,9 @@ public class WeatherForecastServiceImpl implements WeatherForecastService {
                         Flux<WeatherForecast> weatherForecasts = Flux.fromIterable(WeatherForecastMapper.INSTANCE.map(forecastDto));
                         return forecastRepository.saveAll(weatherForecasts);
                     } else {
-                        log.warn("Не удалось сохранить данные о прогнозе погоды");
                         return Flux.error(new IllegalArgumentException("Невозможно сохранить данные о прогнозе погоды"));
                     }
-                })
-                .doOnNext(savedForecast -> log.info("Данные о прогнозе погоды сохранены: {}", savedForecast));
+                });
     }
 
     @Override

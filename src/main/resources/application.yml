@@ -20,11 +20,11 @@ logging:
 
 scheduler:
   weather:
-    interval-in-cron: "* 0/50 * * * *"
+    interval-in-cron: "0 */1 * * * *"
   forecast:
-    interval-in-cron: "* 0/1 * * * *"
+    interval-in-cron: "0 */10 * * * *"
   city-popularity:
-    interval-in-cron: "* 0/30 * * * *"
+    interval-in-cron: "0 */30 * * * *"
   default-scheduler-lock: "PT40M"
   lock-at-least-for: "PT1M"
   lock-at-most-for: "PT1M"

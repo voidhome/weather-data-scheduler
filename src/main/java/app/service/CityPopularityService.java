@@ -1,12 +1,11 @@
 package app.service;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.List;
 
 public interface CityPopularityService {
 
-    List<String> getPopularCities();
+    Flux<String> getPopularCities();
 
     Mono<Boolean> isCityPopular(String city);
 

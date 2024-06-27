@@ -1,6 +1,8 @@
 package app.scheduler;
 
+import reactor.core.publisher.Mono;
+
 public interface WeatherForecastTask {
 
-    void syncWeatherForecastData();
+    Mono<Void> syncWeatherForecastData();
 }

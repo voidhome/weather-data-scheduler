@@ -1,5 +1,6 @@
 package app.controller;
 
+import app.dto.response.WeatherForecastResponse;
 import app.service.WeatherForecastService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ public class WeatherForecastRestController {
     public Mono<String> getOutfitRecommendation(@RequestHeader("X-Location-City") String city,
                                                 @RequestParam LocalDateTime startDateTime,
                                                 @RequestParam LocalDateTime endDateTime) {
-        return forecastService.analyzeWeatherForecast(forecastService.getWeatherForecast(city, startDateTime, endDateTime));
+        Mono<WeatherForecastResponse> response = forecastService.getWeatherForecast(city, startDateTime, endDateTime);
+        return forecastService.analyzeWeatherForecast(response);
     }
 }

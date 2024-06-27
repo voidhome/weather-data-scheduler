@@ -9,8 +9,8 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.SignalType;
 
 @Component
 @Slf4j
@@ -25,19 +25,18 @@ public class WeatherForecastTaskImpl implements WeatherForecastTask {
     @Scheduled(cron = "${scheduler.forecast.interval-in-cron}")
     @SchedulerLock(name = "syncWeatherForecastData",
             lockAtLeastFor = "${scheduler.lock-at-least-for}", lockAtMostFor = "${scheduler.lock-at-most-for}")
-    public void syncWeatherForecastData() {
-        try {
-            forecastService.deleteAllWeatherForecast();
+    public Mono<Void> syncWeatherForecastData() {
+        forecastService.deleteAllWeatherForecast();
 
-            List<String> popularCity = cityPopularityService.getPopularCities();
-
-            for (String city : popularCity) {
-                forecastService.createWeatherForecast(city);
-            }
-
-            log.info("Синхронизация прогноза погоды выполнена успешно");
-        } catch (Exception e) {
-            log.error("Ошибка при синхронизации прогноза погоды: {}", e.getMessage());
-        }
+        return cityPopularityService.getPopularCities()
+                .flatMap(city -> forecastService.createWeatherForecast(city))
+                .collectList()
+                .doOnError(e -> log.error("Ошибка при синхронизации прогноза погоды: {}", e.getMessage()))
+                .then()
+                .doFinally(signalType -> {
+                    if (signalType == SignalType.ON_COMPLETE) {
+                        log.info("Синхронизация прогноза погоды выполнена успешно");
+                    }
+                });
     }
 }

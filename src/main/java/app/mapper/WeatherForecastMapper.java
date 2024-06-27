@@ -11,16 +11,14 @@ import org.mapstruct.Mapping;
 import org.mapstruct.Mappings;
 import org.mapstruct.Named;
 import org.mapstruct.factory.Mappers;
-import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toList;
 
@@ -73,18 +71,14 @@ public interface WeatherForecastMapper {
         else return WeatherType.WARM;
     }
 
-    default Mono<WeatherForecastResponse> toResponse(Iterable<WeatherForecast> weatherForecasts) {
-        List<WeatherForecast> forecasts = StreamSupport.stream(weatherForecasts.spliterator(), false)
-                .collect(Collectors.toList());
+    default WeatherForecastResponse toResponse(Iterable<WeatherForecast> weatherForecasts) {
+        List<WeatherForecast> forecasts = new ArrayList<>();
+        weatherForecasts.forEach(forecasts::add);
 
-        return Mono.just(WeatherForecastResponse.builder()
+        return WeatherForecastResponse.builder()
                 .forecasts(forecasts)
-                .build());
+                .build();
     }
 
-    default Mono<WeatherForecastResponse> toResponse(String message) {
-        return Mono.just(WeatherForecastResponse.builder()
-                .message(message)
-                .build());
-    }
+    WeatherForecastResponse toResponse(String message);
 }

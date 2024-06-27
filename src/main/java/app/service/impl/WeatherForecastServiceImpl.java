@@ -17,10 +17,14 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Comparator;
+import java.util.PriorityQueue;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -40,10 +44,10 @@ public class WeatherForecastServiceImpl implements WeatherForecastService {
 
     @Override
     @Transactional
-    @Cacheable(value = "dailyCache", key = "#city", condition = "@cityPopularityServiceImpl.isCityPopular(#city)",
-            unless = "!#result.forecasts.iterator().next().forecastDateTime.toLocalDate().isEqual(T(java.time.LocalDate).now())")
-    public WeatherForecastResponse getWeatherForecast(String city, LocalDateTime startDateTime,
-                                                      LocalDateTime endDateTime) {
+//    @Cacheable(value = "dailyCache", key = "#city", condition = "@cityPopularityServiceImpl.isCityPopular(#city)",
+//            unless = "!#result.forecasts.iterator().next().forecastDateTime.toLocalDate().isEqual(T(java.time.LocalDate).now())")
+    public Mono<WeatherForecastResponse> getWeatherForecast(String city, LocalDateTime startDateTime,
+                                                            LocalDateTime endDateTime) {
         log.info("Запрос прогноза погоды для города {} с {} по {}", city, startDateTime, endDateTime);
 
         LocalDate now = LocalDate.now();
@@ -58,86 +62,86 @@ public class WeatherForecastServiceImpl implements WeatherForecastService {
             return WeatherForecastMapper.INSTANCE.toResponse(forecastAfterLimitMessage);
         }
 
-        List<WeatherForecast> weatherForecasts = forecastRepository.findWeatherForecastByCityAndDateTime(
-                city, startDateTime, endDateTime);
-
         cityPopularityService.increaseCityPopularity(city);
 
-        if (!weatherForecasts.isEmpty()) {
-            log.info("Данные о прогнозе погоды успешно получены из БД: {}", weatherForecasts);
-            return WeatherForecastMapper.INSTANCE.toResponse(weatherForecasts);
-        } else {
-            Iterable<WeatherForecast> forecasts = createWeatherForecast(city);
-            return WeatherForecastMapper.INSTANCE.toResponse(forecasts);
-        }
+        return forecastRepository.findByCityAndForecastDateTimeBetween(city, startDateTime, endDateTime)
+                .collectList()
+                .flatMap(weatherForecasts -> {
+                    if (!weatherForecasts.isEmpty()) {
+                        log.info("Данные о прогнозе погоды успешно получены из БД: {}", weatherForecasts);
+                        return WeatherForecastMapper.INSTANCE.toResponse(weatherForecasts);
+                    } else {
+                        return WeatherForecastMapper.INSTANCE.toResponse(createWeatherForecast(city).toIterable());
+                    }
+                });
     }
 
     @Override
-    public Optional<ForecastDto> getForecastDtoFromExternalApi(String city) {
-        Optional<ForecastDto> forecastDto = restClient.getForecastDto(city);
-        if (forecastDto.isPresent()) {
-            log.info("Данные о прогнозе погоды успешно получены из внешнего API: {}", forecastDto);
-        } else {
-            log.warn("Для города {} не удалось получить данные о прогнозе погоды из внешнего API.", city);
-        }
-        return forecastDto;
+    public Mono<ForecastDto> getForecastDtoFromExternalApi(String city) {
+        return restClient.getForecastDto(city)
+                .doOnNext(forecastDto -> log.info("Данные о прогнозе погоды успешно получены из внешнего API: {}", forecastDto))
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.warn("Для города {} не удалось получить данные о прогнозе погоды из внешнего API.", city);
+                    return Mono.empty();
+                }));
     }
 
     @Override
     @Transactional
-    @CachePut(value = "dailyCache", key = "#city", condition = "@cityPopularityServiceImpl.isCityPopular(#city)",
-            unless = "!#result.iterator().next().forecastDateTime.toLocalDate().isEqual(T(java.time.LocalDate).now())")
-    public Iterable<WeatherForecast> createWeatherForecast(String city) {
-        Optional<ForecastDto> forecastDto = getForecastDtoFromExternalApi(city);
-
-        Iterable<WeatherForecast> weatherForecast = Optional.ofNullable(forecastDto.get())
-                .map(WeatherForecastMapper.INSTANCE::map)
-                .map(forecastRepository::saveAll)
-                .orElseThrow(() -> {
-                    log.warn("Не удалось сохранить данные о прогнозе погоды");
-                    return new IllegalArgumentException("Невозможно сохранить данные о прогнозе погоды");
-                });
-
-        log.info("Данные о прогнозе погоды сохранены: {}", weatherForecast);
-        return weatherForecast;
+//    @CachePut(value = "dailyCache", key = "#city", condition = "@cityPopularityServiceImpl.isCityPopular(#city)",
+//            unless = "!#result.iterator().next().forecastDateTime.toLocalDate().isEqual(T(java.time.LocalDate).now())")
+    public Flux<WeatherForecast> createWeatherForecast(String city) {
+        return getForecastDtoFromExternalApi(city)
+                .flatMapMany(forecastDto -> {
+                    if (forecastDto != null) {
+                        Flux<WeatherForecast> weatherForecasts = Flux.fromIterable(WeatherForecastMapper.INSTANCE.map(forecastDto));
+                        return forecastRepository.saveAll(weatherForecasts);
+                    } else {
+                        log.warn("Не удалось сохранить данные о прогнозе погоды");
+                        return Flux.error(new IllegalArgumentException("Невозможно сохранить данные о прогнозе погоды"));
+                    }
+                })
+                .doOnNext(savedForecast -> log.info("Данные о прогнозе погоды сохранены: {}", savedForecast));
     }
 
     @Override
     @Transactional
     @CacheEvict(value = "dailyCache", allEntries = true)
-    public void deleteAllWeatherForecast() {
-        try {
-            forecastRepository.deleteAll();
-            log.info("Все данные о прогнозе погоды успешно удалены");
-        } catch (Exception e) {
-            log.error("Ошибка при удалении данных о прогнозе погоды: {}", e.getMessage());
-            throw new RuntimeException("Ошибка при удалении данных о прогнозе погоды", e);
-        }
+    public Mono<Void> deleteAllWeatherForecast() {
+        return forecastRepository.deleteAll()
+                .doOnSuccess(unused -> log.info("Все данные о прогнозе погоды успешно удалены"))
+                .onErrorMap(e -> new RuntimeException("Ошибка при удалении данных о прогнозе погоды", e));
     }
 
     @Override
     @Transactional
-    public String analyzeWeatherForecast(WeatherForecastResponse response) {
+    public Mono<String> analyzeWeatherForecast(Mono<WeatherForecastResponse> responseMono) {
 
-        if (response.getMessage() != null) return response.getMessage();
+        return responseMono.flatMap(response -> {
+            if (response.getMessage() != null) {
+                return Mono.just(response.getMessage());
+            }
 
-        log.info("Применение рекомендаций по одежде на основе прогноза погоды");
+            log.info("Применение рекомендаций по одежде на основе прогноза погоды");
 
-        Set<WeatherType> uniqueWeatherTypes = new HashSet<>();
-        response.getForecasts().forEach(forecast -> uniqueWeatherTypes.add(forecast.getWeatherType()));
+            return Flux.fromIterable(response.getForecasts())
+                    .map(WeatherForecast::getWeatherType)
+                    .collect(Collectors.toSet())
+                    .map(uniqueWeatherTypes -> {
+                        PriorityQueue<WeatherType> priorityQueue = new PriorityQueue<>(Comparator.comparingInt(WeatherType::getPriority));
+                        priorityQueue.addAll(uniqueWeatherTypes);
+                        WeatherType mostSignificantWeatherType = priorityQueue.peek();
 
-        PriorityQueue<WeatherType> priorityQueue = new PriorityQueue<>(Comparator.comparingInt(WeatherType::getPriority));
-        priorityQueue.addAll(uniqueWeatherTypes);
-        WeatherType mostSignificantWeatherType = priorityQueue.peek();
+                        StringBuilder clothingRecommendation = new StringBuilder("Рекомендации по одежде: ");
+                        String mostSignificantDescription = mostSignificantWeatherType.getDescription();
 
-        StringBuilder clothingRecommendation = new StringBuilder("Рекомендации по одежде: ");
-        String mostSignificantDescription = mostSignificantWeatherType.getDescription();
+                        if (!mostSignificantDescription.isEmpty()) {
+                            clothingRecommendation.append(mostSignificantDescription);
+                        }
 
-        if (!mostSignificantDescription.isEmpty()) {
-            clothingRecommendation.append(mostSignificantDescription);
-        }
-
-        log.info(clothingRecommendation.toString());
-        return clothingRecommendation.toString();
+                        log.info(clothingRecommendation.toString());
+                        return clothingRecommendation.toString();
+                    });
+        });
     }
 }

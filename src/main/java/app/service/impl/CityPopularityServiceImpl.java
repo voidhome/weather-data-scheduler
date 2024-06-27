@@ -7,10 +7,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.StreamSupport;
 
 @Slf4j
@@ -23,7 +22,7 @@ public class CityPopularityServiceImpl implements CityPopularityService {
 
     @Override
     public List<String> getPopularCities() {
-        List<String> popularCities = StreamSupport.stream(cityPopularityRepository.findAll().spliterator(), false)
+        List<String> popularCities = StreamSupport.stream(cityPopularityRepository.findAll().toIterable().spliterator(), false)
                 .filter(city -> city.getPopularity() >= 100)
                 .map(CityPopularity::getCity)
                 .toList();
@@ -32,37 +31,36 @@ public class CityPopularityServiceImpl implements CityPopularityService {
     }
 
     @Override
-    public boolean isCityPopular(String city) {
-        CityPopularity cityPopularity = cityPopularityRepository.findByCity(city);
-        return cityPopularity != null && cityPopularity.getPopularity() >= 100;
+    public Mono<Boolean> isCityPopular(String city) {
+        return cityPopularityRepository.findByCity(city)
+                .map(cityPopularity -> cityPopularity.getPopularity() >= 100)
+                .defaultIfEmpty(false);
     }
 
     @Override
     @Transactional
-    public void increaseCityPopularity(String city) {
-        CityPopularity cityPopularity = Optional.ofNullable(cityPopularityRepository.findByCity(city))
-                .orElse(CityPopularity.builder()
-                        .city(city)
-                        .popularity(0)
-                        .build());
-
-        cityPopularity.setPopularity(cityPopularity.getPopularity() + 1);
-        cityPopularityRepository.save(cityPopularity);
-        log.info("Популярность города {} увеличена до {}.", city, cityPopularity.getPopularity());
+    public Mono<Void> increaseCityPopularity(String city) {
+        return cityPopularityRepository.findByCity(city)
+                .switchIfEmpty(Mono.just(CityPopularity.builder().city(city).popularity(0).build()))
+                .flatMap(cityPopularity -> {
+                    cityPopularity.setPopularity(cityPopularity.getPopularity() + 1);
+                    return cityPopularityRepository.save(cityPopularity)
+                            .doOnSuccess(savedCityPopularity -> log.info("Популярность города {} увеличена до {}.", city, savedCityPopularity.getPopularity()));
+                }).then();
     }
 
     @Override
     @Transactional
-    public void syncCityPopularity() {
-        List<CityPopularity> citiesToUpdate = new ArrayList<>();
-
-        cityPopularityRepository.findAll().forEach(city -> {
-            int newPopularity = city.getPopularity() >= 100 ? 100 : 0;
-            city.setPopularity(newPopularity);
-            citiesToUpdate.add(city);
-        });
-
-        cityPopularityRepository.saveAll(citiesToUpdate);
-        log.info("Синхронизация популярности городов завершена. Обновлено {} записей.", citiesToUpdate.size());
+    public Mono<Void> syncCityPopularity() {
+        return cityPopularityRepository.findAll()
+                .map(city -> {
+                    int newPopularity = city.getPopularity() >= 100 ? 100 : 0;
+                    city.setPopularity(newPopularity);
+                    return city;
+                })
+                .collectList()
+                .flatMapMany(cityPopularityRepository::saveAll)
+                .doOnNext(savedCity -> log.info("Популярность города {} обновлена до {}.", savedCity.getCity(), savedCity.getPopularity()))
+                .then();
     }
 }

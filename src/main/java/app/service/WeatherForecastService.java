@@ -3,19 +3,21 @@ package app.service;
 import app.dto.ForecastDto;
 import app.dto.response.WeatherForecastResponse;
 import app.table.WeatherForecast;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface WeatherForecastService {
 
-    WeatherForecastResponse getWeatherForecast(String city, LocalDateTime startDateTime, LocalDateTime endDateTime);
+    Mono<WeatherForecastResponse> getWeatherForecast(String city, LocalDateTime startDateTime, LocalDateTime endDateTime);
 
-    Optional<ForecastDto> getForecastDtoFromExternalApi(String city);
+    Mono<ForecastDto> getForecastDtoFromExternalApi(String city);
 
-    Iterable<WeatherForecast> createWeatherForecast(String city);
+    Flux<WeatherForecast> createWeatherForecast(String city);
 
-    void deleteAllWeatherForecast();
+    Mono<Void> deleteAllWeatherForecast();
 
-    String analyzeWeatherForecast(WeatherForecastResponse response);
+    Mono<String> analyzeWeatherForecast(Mono<WeatherForecastResponse> response);
 }

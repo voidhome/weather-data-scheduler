@@ -1,11 +1,10 @@
 package app.controller;
 
-import app.dto.response.WeatherForecastResponse;
 import app.service.WeatherForecastService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 
@@ -18,10 +17,9 @@ public class WeatherForecastRestController {
     private final WeatherForecastService forecastService;
 
     @GetMapping
-    public ResponseEntity<String> getOutfitRecommendation(@RequestHeader("X-Location-City") String city,
-                                                          @RequestParam LocalDateTime startDateTime,
-                                                          @RequestParam LocalDateTime endDateTime) {
-        WeatherForecastResponse response = forecastService.getWeatherForecast(city, startDateTime, endDateTime);
-        return ResponseEntity.ok(forecastService.analyzeWeatherForecast(response));
+    public Mono<String> getOutfitRecommendation(@RequestHeader("X-Location-City") String city,
+                                                @RequestParam LocalDateTime startDateTime,
+                                                @RequestParam LocalDateTime endDateTime) {
+        return forecastService.analyzeWeatherForecast(forecastService.getWeatherForecast(city, startDateTime, endDateTime));
     }
 }

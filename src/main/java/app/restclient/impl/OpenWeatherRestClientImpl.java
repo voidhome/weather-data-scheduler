@@ -8,21 +8,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OpenWeatherRestClientImpl implements OpenWeatherRestClient {
 
-    private final RestClient restClient;
+    private final WebClient webClient;
 
     @Value("${open-weather.weather-path}")
     private String weatherPath;
@@ -31,40 +28,26 @@ public class OpenWeatherRestClientImpl implements OpenWeatherRestClient {
     private String forecastPath;
 
     @Override
-    public Optional<WeatherDto> getWeatherDto(String city) {
-        try {
-            return Optional.ofNullable(restClient.get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path(weatherPath)
-                            .queryParam("q", city)
-                            .build())
-                    .retrieve()
-                    .body(WeatherDto.class));
-        } catch (HttpClientErrorException | HttpServerErrorException e) {
-            log.error("Ошибка при получении данных о текущей погоде", e);
-            return Optional.empty();
-        } catch (RestClientException e) {
-            log.error("Ошибка REST-клиента при получении данных о текущей погоде", e);
-            throw new WeatherServiceException("Ошибка при получении данных о текущей погоде", e);
-        }
+    public Mono<WeatherDto> getWeatherDto(String city) {
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path(weatherPath)
+                        .queryParam("q", city)
+                        .build())
+                .retrieve()
+                .bodyToMono(WeatherDto.class)
+                .onErrorResume(e -> Mono.error(new WeatherServiceException("Ошибка при получении данных о текущей погоде", e)));
     }
 
     @Override
-    public Optional<ForecastDto> getForecastDto(String city) {
-        try {
-            return Optional.ofNullable(restClient.get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path(forecastPath)
-                            .queryParam("q", URLEncoder.encode(city, StandardCharsets.UTF_8))
-                            .build())
-                    .retrieve()
-                    .body(ForecastDto.class));
-        } catch (HttpClientErrorException | HttpServerErrorException e) {
-            log.error("Ошибка при получении данных о прогнозе погоды", e);
-            return Optional.empty();
-        } catch (RestClientException e) {
-            log.error("Ошибка REST-клиента при получении данных о прогнозе погоды", e);
-            throw new WeatherServiceException("Ошибка при получении данных о прогнозе погоды", e);
-        }
+    public Mono<ForecastDto> getForecastDto(String city) {
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path(forecastPath)
+                        .queryParam("q", URLEncoder.encode(city, StandardCharsets.UTF_8))
+                        .build())
+                .retrieve()
+                .bodyToMono(ForecastDto.class)
+                .onErrorResume(e -> Mono.error(new WeatherServiceException("Ошибка при получении данных о прогнозе погоды", e)));
     }
 }

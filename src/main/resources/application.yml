@@ -1,11 +1,10 @@
 spring:
   application:
     name: weather-data-scheduler
-  datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/postgres
     username: postgres
     password: postgres
-    driver-class-name: org.postgresql.Driver
   liquibase:
     change-log: db//changelog/changelog-master.xml
   data:
@@ -21,9 +20,9 @@ logging:
 
 scheduler:
   weather:
-    interval-in-cron: "* 0/5 * * * *"
+    interval-in-cron: "* 0/50 * * * *"
   forecast:
-    interval-in-cron: "* 0/10 * * * *"
+    interval-in-cron: "* 0/1 * * * *"
   city-popularity:
     interval-in-cron: "* 0/30 * * * *"
   default-scheduler-lock: "PT40M"

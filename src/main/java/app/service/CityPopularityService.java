@@ -1,14 +1,16 @@
 package app.service;
 
+import reactor.core.publisher.Mono;
+
 import java.util.List;
 
 public interface CityPopularityService {
 
     List<String> getPopularCities();
 
-    boolean isCityPopular(String city);
+    Mono<Boolean> isCityPopular(String city);
 
-    public void increaseCityPopularity(String city);
+    public Mono<Void> increaseCityPopularity(String city);
 
-    public void syncCityPopularity();
+    public Mono<Void> syncCityPopularity();
 }
